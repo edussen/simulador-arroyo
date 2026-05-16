@@ -3,57 +3,121 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulador Vial - Relieve Topográfico y Arroyo</title>
+    <title>Monitor Interactivo 3D | ArroyosBAQ</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <link rel="icon" type="image/png" href="https://imagenes.numart.com.co/AquaVIA-LO.png">
+
     <style>
-        body { margin: 0; padding: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #000; }
-        canvas { display: block; }
+        :root {
+            --bg-page: #f1f5f9;
+            --border-color: #e5e7eb;
+            --text-main: #111827;
+            --text-muted: #64748b;
+            --bg-panel: rgba(255, 255, 255, 0.85);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', -apple-system, sans-serif; }
         
+        body { 
+            height: 100vh; display: flex; flex-direction: column; overflow: hidden; background: var(--bg-page); 
+        }
+
+        /* --- HEADER (Extraído de tu UI) --- */
+        .main-header {
+            background-color: white; border-bottom: 1px solid var(--border-color);
+            z-index: 2000; flex-shrink: 0; position: relative;
+        }
+        .header-content { padding: 0 1rem; max-width: 80rem; margin: 0 auto; }
+        .header-inner { display: flex; align-items: center; justify-content: space-between; height: 4rem; }
+        .logo img { height: 45px; width: auto; }
+
+        /* --- CONTENEDOR DEL SIMULADOR 3D --- */
+        .view-container {
+            flex: 1; position: relative; overflow: hidden; display: block;
+        }
+        canvas { display: block; width: 100%; height: 100%; outline: none;}
+
+        /* --- CONSOLAS FLOTANTES (Tema Claro y Minimalista) --- */
         .ui-container {
-            position: absolute; top: 15px; left: 15px; right: 15px;
+            position: absolute; top: 20px; left: 20px; right: 20px;
             display: flex; justify-content: space-between; pointer-events: none; z-index: 100;
         }
 
         .console {
-            background: rgba(15, 20, 25, 0.95); backdrop-filter: blur(8px);
-            color: #fff; padding: 15px; border-radius: 8px; border: 1px solid #333;
-            width: 280px; pointer-events: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            background: var(--bg-panel); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            color: var(--text-main); padding: 20px; border-radius: 16px; 
+            border: 1px solid rgba(255,255,255,0.6); width: 280px; pointer-events: auto; 
+            box-shadow: 0 10px 40px -10px rgba(0,0,0,0.1);
         }
 
-        h2 { margin-top: 0; font-size: 0.95em; text-align: center; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 1px;}
-        .title-vial { color: #00d2ff; border-bottom: 1px solid #00d2ff44; padding-bottom: 5px; }
-        .title-clima { color: #ffaa00; border-bottom: 1px solid #ffaa0044; padding-bottom: 5px;}
+        .console h2 { 
+            margin-top: 0; font-size: 0.75rem; text-align: left; text-transform: uppercase; 
+            margin-bottom: 15px; letter-spacing: 0.5px; color: var(--text-muted); font-weight: 700;
+        }
         
         button {
-            width: 100%; padding: 10px; margin-bottom: 8px; font-size: 0.9em;
-            background-color: #1a1a24; color: #bbb; border: 1px solid #444;
-            border-radius: 4px; cursor: pointer; transition: all 0.2s;
+            width: 100%; padding: 12px 16px; margin-bottom: 8px; font-size: 0.85rem; font-weight: 600; text-align: left;
+            background-color: #f8fafc; color: var(--text-muted); border: 1px solid #f1f5f9;
+            border-radius: 10px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; gap: 10px;
         }
-        button:hover { background-color: #2a2a3a; color: #fff; }
+        button:hover { background-color: #f1f5f9; color: var(--text-main); }
+        button::before { content: ''; display: block; width: 8px; height: 8px; border-radius: 50%; background-color: #cbd5e1; }
         
-        .active-vial { border-color: #00ff00 !important; background-color: #003300 !important; color: #00ff00 !important; font-weight: bold;}
-        .active-warn { border-color: #ffaa00 !important; background-color: #332200 !important; color: #ffaa00 !important; font-weight: bold;}
-        .active-cerrado { border-color: #ff3333 !important; background-color: #330000 !important; color: #ff3333 !important; font-weight: bold;}
-        .active-clima { border-color: #44aaff !important; background-color: #001133 !important; color: #44aaff !important; font-weight: bold;}
-        .active-tormenta { border-color: #b000ff !important; background-color: #220033 !important; color: #d488ff !important; font-weight: bold;}
+        /* Estados Activos Minimalistas */
+        .active-vial { background-color: #ecfdf5 !important; color: #065f46 !important; border-color: #d1fae5 !important; }
+        .active-vial::before { background-color: #10b981; box-shadow: 0 0 8px #10b981; }
+
+        .active-warn { background-color: #fffbeb !important; color: #b45309 !important; border-color: #fef3c7 !important; }
+        .active-warn::before { background-color: #f59e0b; box-shadow: 0 0 8px #f59e0b; }
+
+        .active-cerrado { background-color: #fef2f2 !important; color: #b91c1c !important; border-color: #fee2e2 !important; }
+        .active-cerrado::before { background-color: #ef4444; box-shadow: 0 0 8px #ef4444; animation: pulse-red 1.5s infinite; }
+
+        .active-clima { background-color: #eff6ff !important; color: #1d4ed8 !important; border-color: #dbeafe !important; }
+        .active-clima::before { background-color: #3b82f6; box-shadow: 0 0 8px #3b82f6;}
+
+        .active-tormenta { background-color: #faf5ff !important; color: #6b21a8 !important; border-color: #f3e8ff !important; }
+        .active-tormenta::before { background-color: #a855f7; box-shadow: 0 0 8px #a855f7; animation: pulse-purple 2s infinite;}
+
+        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+        @keyframes pulse-purple { 0% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0.4); } 70% { box-shadow: 0 0 0 8px rgba(168, 85, 247, 0); } 100% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0); } }
     </style>
 </head>
 <body>
 
-    <div class="ui-container">
-        <div class="console">
-            <h2 class="title-vial">Red de Letreros LED</h2>
-            <button id="btn-v-cuidado" class="active-vial" onclick="setVial('cuidado')">Conduce con Cuidado</button>
-            <button id="btn-v-arroyo" onclick="setVial('arroyo')">Posible Arroyo</button>
-            <button id="btn-v-peligro" onclick="setVial('peligro')">Peligro en Vía</button>
-            <button id="btn-v-cerrado" onclick="setVial('cerrado')">Vía Cerrada (Desvío)</button>
+    <header class="main-header">
+        <div class="header-content">
+            <div class="header-inner">
+                <div class="logo">
+                    <img src="https://pub-03d0689f896f4c1b96c0eadaaff42219.r2.dev/AquaVIA-LO.png" alt="ArroyosBAQ Logo">
+                </div>
+                <div style="width: 100px;"></div> 
+            </div>
+        </div>
+    </header>
+
+    <div id="view-web" class="view-container">
+        
+        <div class="ui-container">
+            <div class="console">
+                <h2>Panel LED Principal</h2>
+                <button id="btn-v-cuidado" class="active-vial" onclick="setVial('cuidado')">Conduce con Cuidado</button>
+                <button id="btn-v-arroyo" onclick="setVial('arroyo')">Posible Arroyo</button>
+                <button id="btn-v-peligro" onclick="setVial('peligro')">Peligro en Vía</button>
+                <button id="btn-v-cerrado" onclick="setVial('cerrado')">Vía Cerrada (Desvío)</button>
+            </div>
+
+            <div class="console">
+                <h2>Control Ambiental</h2>
+                <button id="btn-c-despejado" class="active-clima" onclick="setWeather('despejado')">Cielo Despejado</button>
+                <button id="btn-c-lluvia" onclick="setWeather('lluvia')">Lluvia Moderada</button>
+                <button id="btn-c-tormenta" onclick="setWeather('tormenta')">Alerta Tormenta</button>
+            </div>
         </div>
 
-        <div class="console">
-            <h2 class="title-clima">Entorno / Arroyos</h2>
-            <button id="btn-c-despejado" class="active-clima" onclick="setWeather('despejado')">Despejado</button>
-            <button id="btn-c-lluvia" onclick="setWeather('lluvia')">Lluvia (Charcos)</button>
-            <button id="btn-c-tormenta" onclick="setWeather('tormenta')">Tormenta (Arroyo Fuerte)</button>
-        </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -75,35 +139,31 @@
 
         const config = {
             roadLength: 800,
-            waterLevel: -2.5, // Nivel del agua oculto muy por debajo de la bajada
+            waterLevel: -2.5, 
             anchoCra46: 28, anchoCll85: 22, anchoMiniCalle: 12,
             separadorCentral: 4
         };
 
-        // --- FUNCIONES MATEMÁTICAS PARA LA BAJADA TOPOGRÁFICA ---
-        // Calcula la profundidad de la calle según su distancia al centro de la intersección
         function getDipValue(x, z) {
             let dist = Math.sqrt(x*x + z*z);
-            let radius = 80; // El hundimiento afecta 80 metros a la redonda
+            let radius = 80; 
             if (dist < radius) {
                 let t = dist / radius;
-                return -1.9 * (1 - t * t); // Cae suavemente hasta -1.9 metros en el centro exacto
+                return -1.9 * (1 - t * t); 
             }
             return 0;
         }
 
-        // Dobla la geometría de un plano para adaptarlo a la bajada
         function applyDipToRotatedPlane(geometry, offsetX = 0, offsetZ = 0) {
             const pos = geometry.attributes.position;
             for (let i = 0; i < pos.count; i++) {
                 let worldX = pos.getX(i) + offsetX;
-                let worldZ = -pos.getY(i) + offsetZ; // Plano rotado -PI/2
+                let worldZ = -pos.getY(i) + offsetZ; 
                 pos.setZ(i, pos.getZ(i) + getDipValue(worldX, worldZ));
             }
             geometry.computeVertexNormals();
         }
 
-        // Dobla geometrías 3D (Cajas, Bulevares)
         function applyDipToBox(geometry, offsetX = 0, offsetZ = 0) {
             const pos = geometry.attributes.position;
             for (let i = 0; i < pos.count; i++) {
@@ -115,18 +175,22 @@
         }
 
         function init() {
+            const container = document.getElementById('view-web');
+            let width = container.clientWidth;
+            let height = container.clientHeight;
+
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x87CEEB);
             scene.fog = new THREE.FogExp2(0x87CEEB, 0.002);
 
-            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 1000);
             camera.position.set(60, 40, 180);
 
             renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setSize(width, height);
             renderer.shadowMap.enabled = true;
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-            document.body.appendChild(renderer.domElement);
+            container.appendChild(renderer.domElement);
 
             controls = new THREE.OrbitControls(camera, renderer.domElement);
             controls.target.set(0, 5, 40);
@@ -137,8 +201,8 @@
 
             setupLighting();
             createAccurateMap(); 
-            createGantryAndSign(130, 1);   // Cara Sur
-            createGantryAndSign(-130, -1); // Cara Norte
+            createGantryAndSign(130, 1);   
+            createGantryAndSign(-130, -1); 
             setupWeatherSystems();
 
             window.addEventListener('resize', onWindowResize, false);
@@ -177,19 +241,16 @@
                 new THREE.MeshStandardMaterial({ color: 0x2a2a2a })  
             ];
 
-            // 1. Vía Principal (Cra 46) - Altamente segmentada para poder curvarla
             const cra46Geo = new THREE.PlaneGeometry(config.anchoCra46, config.roadLength, 10, 100);
             applyDipToRotatedPlane(cra46Geo);
             const cra46 = new THREE.Mesh(cra46Geo, asfaltoMat);
             cra46.rotation.x = -Math.PI / 2; cra46.position.y = 0.05; cra46.receiveShadow = true; scene.add(cra46);
 
-            // 2. Intersección (Cll 85)
             const cll85Geo = new THREE.PlaneGeometry(config.roadLength, config.anchoCll85, 100, 10);
             applyDipToRotatedPlane(cll85Geo);
             const cll85 = new THREE.Mesh(cll85Geo, asfaltoMat);
             cll85.rotation.x = -Math.PI / 2; cll85.position.y = 0.06; cll85.receiveShadow = true; scene.add(cll85);
 
-            // 3. Andenes (Las 4 esquinas masivas, segmentadas para curvarse con la calle)
             const andenWidth = 300;
             const offsetCra = config.anchoCra46/2; const offsetCll = config.anchoCll85/2;
             const createAnden = (xDir, zDir) => {
@@ -202,7 +263,6 @@
             };
             createAnden(1,1); createAnden(-1,1); createAnden(-1,-1); createAnden(1,-1);
 
-            // 4. Bulevar Central (Segmentado para curvarse)
             const addBulevarSegment = (zStart, zEnd) => {
                 const len = Math.abs(zEnd - zStart);
                 const posZ = (zStart + zEnd) / 2;
@@ -213,13 +273,11 @@
             };
             addBulevarSegment(100, 350); addBulevarSegment(15, 80); addBulevarSegment(-80, -15); addBulevarSegment(-350, -100); 
 
-            // 5. Decoración: Árboles (Ajustados a la bajada)
             for(let z = -300; z <= 300; z += 18) {
                 if (Math.abs(z) > 15 && Math.abs(z - 90) > 10 && Math.abs(z + 90) > 10) createTree(0, z);
                 if (Math.abs(z) > 20) { createTree(18, z); createTree(-18, z); }
             }
 
-            // 6. GENERADOR DE CIUDAD DENSA (Edificios ajustados a la bajada)
             const generateCityBlock = (startX, endX, startZ, endZ, isCorner) => {
                 for(let i=0; i<15; i++) {
                     const w = 15 + Math.random()*25; const d = 15 + Math.random()*25;
@@ -229,7 +287,6 @@
                     
                     const posX = startX + Math.random() * (endX - startX);
                     const posZ = startZ + Math.random() * (endZ - startZ);
-                    // Aplica el modificador matemático para asentar el edificio
                     const dipY = getDipValue(posX, posZ);
                     b.position.set(posX, (h/2) + dipY, posZ);
                     b.castShadow = true; b.receiveShadow = true; scene.add(b);
@@ -244,11 +301,9 @@
             generateCityBlock(-300, -55, -300, -25, false);
             generateCityBlock( 25,  300, -300, -25, true); 
 
-            // Semáforos adaptados a la profundidad del terreno
             createTrafficLightArm(-14, 13, 'NS'); createTrafficLightArm(14, -13, 'NS');
             createTrafficLightArm(-16, -11, 'EW'); createTrafficLightArm(16, 11, 'EW');
             
-            // Cebras adaptadas
             createPedestrianCrossing(0, offsetCll + 4, 'Z'); createPedestrianCrossing(0, -offsetCll - 4, 'Z');
             createPedestrianCrossing(offsetCra + 4, 0, 'X'); createPedestrianCrossing(-offsetCra - 4, 0, 'X');
         }
@@ -269,15 +324,13 @@
                 let px, pz;
                 if(axis === 'Z') { px = xOffset - 10 + i*2.8; pz = zOffset; stripe.rotation.x = -Math.PI/2; } 
                 else { px = xOffset; pz = zOffset - 7 + i*2.8; stripe.rotation.x = -Math.PI/2; stripe.rotation.z = Math.PI/2; }
-                
-                // Elevar un poquito por encima del asfalto curvo
                 stripe.position.set(px, 0.1 + getDipValue(px, pz), pz);
                 scene.add(stripe);
             }
         }
 
         function createTrafficLightArm(x, z, dir) {
-            const dipY = getDipValue(x, z); // Cuánto ha bajado el terreno aquí
+            const dipY = getDipValue(x, z); 
             const metal = new THREE.MeshStandardMaterial({ color: 0x555555, metalness: 0.3 });
             const poste = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 14), metal);
             poste.position.set(x, 7 + dipY, z); poste.castShadow = true; scene.add(poste);
@@ -313,7 +366,6 @@
             if(dir === 'NS') addLightBox(x + (x<0 ? 8 : -8), 11.5, z); else addLightBox(x, 11.5, z + (z<0 ? 8 : -8));
         }
 
-        // --- SISTEMA DOBLE DE LETREROS LED ---
         function createGantryAndSign(zPos, direction) {
             const metalMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.7 });
             const p1 = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 18), metalMat); p1.castShadow=true;
@@ -383,13 +435,11 @@
                 drawText("VIA CERRADA", "DESVIO AQUI ->", "#ff0000"); drawSpeed("0", "#ff2222");
                 ledSignMaterial.emissiveIntensity = 1.8;
             }
-            
             ctx.shadowBlur = 0; ctx.fillStyle = 'rgba(10,10,10,0.85)';
             for (let i=0; i<1024; i+=5) { ctx.fillRect(i, 0, 2, 256); ctx.fillRect(0, i, 1024, 2); }
             ledSignMaterial.map.needsUpdate = true;
         }
 
-        // --- SISTEMA DE AGUA (ARROYO) ---
         function setupWeatherSystems() {
             rainSystem = new THREE.Points(
                 new THREE.BufferGeometry(),
@@ -402,8 +452,6 @@
             rainSystem.geometry.setAttribute('position', new THREE.BufferAttribute(rainPos, 3));
             scene.add(rainSystem);
 
-            // El plano de agua ahora intercepta el hueco de la calle. Es completamente plano,
-            // así que naturalmente llenará la cuenca de la calle formando el charco/arroyo.
             floodPlane = new THREE.Mesh(
                 new THREE.PlaneGeometry(160, 160), 
                 new THREE.MeshStandardMaterial({ color: 0x1a2e2f, transparent: true, opacity: 0.85, roughness: 0.05, metalness: 0.5 })
@@ -421,26 +469,17 @@
             document.getElementById('btn-c-' + type).classList.add(btnClass);
 
             if (type === 'despejado') {
-                weatherTargets.skyColor.setHex(0x87CEEB);
-                weatherTargets.fogDensity = 0.002;
-                weatherTargets.sunIntensity = 1.1;
-                weatherTargets.ambientIntensity = 0.65;
-                weatherTargets.rainOpacity = 0.0;
-                weatherTargets.rainSpeed = 0;
+                weatherTargets.skyColor.setHex(0x87CEEB); weatherTargets.fogDensity = 0.002;
+                weatherTargets.sunIntensity = 1.1; weatherTargets.ambientIntensity = 0.65;
+                weatherTargets.rainOpacity = 0.0; weatherTargets.rainSpeed = 0;
             } else if (type === 'lluvia') {
-                weatherTargets.skyColor.setHex(0x445566);
-                weatherTargets.fogDensity = 0.008;
-                weatherTargets.sunIntensity = 0.1;
-                weatherTargets.ambientIntensity = 0.3;
-                weatherTargets.rainOpacity = 0.5;
-                weatherTargets.rainSpeed = 45;
+                weatherTargets.skyColor.setHex(0x445566); weatherTargets.fogDensity = 0.008;
+                weatherTargets.sunIntensity = 0.1; weatherTargets.ambientIntensity = 0.3;
+                weatherTargets.rainOpacity = 0.5; weatherTargets.rainSpeed = 45;
             } else if (type === 'tormenta') {
-                weatherTargets.skyColor.setHex(0x1a1a22);
-                weatherTargets.fogDensity = 0.015;
-                weatherTargets.sunIntensity = 0.0;
-                weatherTargets.ambientIntensity = 0.2;
-                weatherTargets.rainOpacity = 0.8;
-                weatherTargets.rainSpeed = 80;
+                weatherTargets.skyColor.setHex(0x1a1a22); weatherTargets.fogDensity = 0.015;
+                weatherTargets.sunIntensity = 0.0; weatherTargets.ambientIntensity = 0.2;
+                weatherTargets.rainOpacity = 0.8; weatherTargets.rainSpeed = 80;
                 lightningTimer = 0; 
             }
         }
@@ -495,7 +534,6 @@
             }
 
             if (currentWeather === 'lluvia') {
-                // Charco muy leve que delinea el fondo de la batea (-1.7 m)
                 if (config.waterLevel < -1.7) config.waterLevel += delta * 0.1;
                 else if (config.waterLevel > -1.7) config.waterLevel -= delta * 0.1;
             } else if (currentWeather === 'tormenta') {
@@ -505,17 +543,11 @@
                     setTimeout(() => lightningLight.intensity = 0, 100);
                     setTimeout(() => lightningLight.intensity = 4, 200); 
                     setTimeout(() => lightningLight.intensity = 0, 300);
-                    
-                    setTimeout(() => {
-                        thunderSound.currentTime = 0; thunderSound.volume = 0.15; 
-                        thunderSound.play().catch(e => {});
-                    }, 2000);
+                    setTimeout(() => { thunderSound.currentTime = 0; thunderSound.volume = 0.15; thunderSound.play().catch(e => {}); }, 2000);
                     lightningTimer = 0;
                 }
-                // Arroyo grande inundando la intersección hasta -0.4 m
                 if (config.waterLevel < -0.4) config.waterLevel += delta * 0.08;
             } else if (config.waterLevel > -2.5) {
-                // Escampa y drena hacia el fondo topográfico
                 config.waterLevel -= delta * 0.15;
             }
             floodPlane.position.y = config.waterLevel;
@@ -525,9 +557,12 @@
         }
 
         function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
+            const container = document.getElementById('view-web');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            camera.aspect = width / height;
             camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setSize(width, height);
         }
 
         init();
